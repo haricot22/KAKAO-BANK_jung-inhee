@@ -871,6 +871,39 @@
   var SHEET_ICON = ['assets/icon-pig.png', 'assets/icon-plane.png', 'assets/icon-card.png', 'assets/icon-calendar.png'];
   var SUB_CHUNKS = ['엄마랑 10월에', '오사카 3박 4일', '다녀올까 해'];
 
+  var SHEET_CHIPS = [
+    [
+      { label: '목표가 있으면 끝까지 유지하고 싶어요', result: '목표가 있는 장기저축은 끝까지 유지하고 싶어요.' },
+      { label: '급한 상황이면 일부 사용해도 괜찮아요', result: '급한 상황이 생기면 장기저축 일부는 사용해도 괜찮아요.' },
+      { label: '금액에 따라 달라요', result: '저축을 깰지는 금액에 따라 다르게 판단해요.' },
+      { label: '✎ 직접 알려줄게요', result: null }
+    ],
+    [
+      { label: '여행도 예산 안에서', result: '여행에서도 정해둔 예산 안에서 쓰는 걸 우선해요.' },
+      { label: '저축에 영향 없다면 OK', result: '여행에서는 경험을 우선하되, 장기저축에 영향을 주지 않는 범위에서 지출해요.' },
+      { label: '여행 종류에 따라 달라요', result: '여행 종류에 따라 지출 기준을 다르게 적용해요.' },
+      { label: '✎ 직접 알려줄게요', result: null }
+    ],
+    [
+      { label: '새로운 고정비도 월 2만원 이하면 괜찮아요', result: '새로운 고정비도 월 2만원 이하라면 괜찮아요.' },
+      { label: '자주 쓰는 서비스라면 괜찮아요', result: '자주 쓰는 서비스라면 새로운 고정비도 괜찮아요.' },
+      { label: '기존 구독을 줄인다면 괜찮아요', result: '기존 구독을 줄이는 만큼은 새로운 고정비도 괜찮아요.' },
+      { label: '✎ 직접 알려줄게요', result: null }
+    ],
+    [
+      { label: '5천원 이하만 알아서 관리해줘', result: '5천원 이하 소액 반복결제만 알아서 관리해줘요.' },
+      { label: '기존 구독만 자동 관리해줘', result: '기존 구독만 자동으로 관리해줘요.' },
+      { label: '해지 전에는 꼭 확인해줘', result: '해지하기 전에는 꼭 먼저 확인해줘요.' },
+      { label: '✎ 직접 알려줄게요', result: null }
+    ]
+  ];
+  var SHEET_PLACEHOLDER = [
+    '예: 장기저축은 가능한 유지하고 싶지만, 예상치 못한 큰 지출이 생기면 일부는 사용해도 괜찮아.',
+    '예: 여행에서는 조금 더 써도 되지만, 적금을 깨면서까지 쓰고 싶지는 않아.',
+    '예: 새로운 구독은 신중하게 보고 싶지만, 매일 쓰는 서비스라면 월 2만원까지는 괜찮아.',
+    '예: 소액 반복결제는 자동으로 관리해도 괜찮지만, 해지하거나 새로운 결제가 생기면 꼭 먼저 알려줘.'
+  ];
+
   function run() {
     clearTimers();
     setState({ phase: 'idle', lines: 0, highlight: false });
@@ -908,11 +941,12 @@
   function proposal() {
     var t = (state.draft || '').trim();
     if (t) return t;
+    var chips = SHEET_CHIPS[Math.max(0, state.sheet)];
     var c = state.chips;
-    if (c[1]) return '여행에서는 경험을 우선하되, 장기저축에 영향을 주지 않는 범위에서 지출해요.';
-    if (c[0]) return '여행에서도 정해둔 예산 안에서 쓰는 걸 우선해요.';
-    if (c[2]) return '여행 종류에 따라 지출 기준을 다르게 적용해요.';
-    return '여행에서는 경험을 우선하되, 장기저축에 영향을 주지 않는 범위에서 지출해요.';
+    if (c[1]) return chips[1].result;
+    if (c[0]) return chips[0].result;
+    if (c[2]) return chips[2].result;
+    return chips[1].result;
   }
 
   function submitSheet() { state.sheetStage = 'confirm'; render(); }
@@ -1044,6 +1078,12 @@
     var textarea = document.getElementById('sheet-textarea');
     if (textarea.value !== state.draft) textarea.value = state.draft;
     document.getElementById('sheet-count').textContent = String((state.draft || '').length);
+    textarea.placeholder = SHEET_PLACEHOLDER[sheetIdx];
+
+    var sheetChips = SHEET_CHIPS[sheetIdx];
+    for (var sc = 0; sc < 4; sc++) {
+      document.getElementById('chip-' + sc).textContent = sheetChips[sc].label;
+    }
 
     show('sheet-editing', state.sheetStage === 'edit');
     show('sheet-confirming', state.sheetStage === 'confirm');
