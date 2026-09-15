@@ -1,0 +1,1095 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Personal Agent — 카카오뱅크</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@500;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: #e9e7e1; }
+  a { color: #2E2A7C; }
+  a:hover { color: #17171A; }
+
+  @keyframes pa-ring { 0% { transform: scale(.72); opacity: .55; } 70% { opacity: .08; } 100% { transform: scale(1.85); opacity: 0; } }
+  @keyframes pa-spin { to { transform: rotate(360deg); } }
+  @keyframes pa-rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes pa-breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.06); } }
+  @keyframes pa-bar { 0%, 100% { height: 12px; } 50% { height: 34px; } }
+
+  .stage {
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 34px;
+    padding: 40px;
+    font-family: 'Noto Sans KR', system-ui, sans-serif;
+    flex-wrap: wrap;
+  }
+
+  .phone {
+    width: 390px;
+    height: 844px;
+    position: relative;
+    border-radius: 46px;
+    overflow: hidden;
+    background: #17171A;
+    box-shadow: 0 30px 70px rgba(23, 23, 26, .35), 0 0 0 10px #101013, 0 0 0 11px #2a2a30;
+    flex: none;
+  }
+
+  .state-rail {
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    width: 206px;
+    flex: none;
+  }
+  .rail-title {
+    font-family: 'Noto Serif KR', Georgia, serif;
+    font-size: 14px;
+    font-weight: 700;
+    color: #17171A;
+    margin-bottom: 4px;
+  }
+  .rail-step {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 11px 13px;
+    border-radius: 13px;
+    cursor: pointer;
+    background: #fff;
+    border: 1px solid rgba(23, 23, 26, .08);
+    transition: box-shadow 200ms ease;
+  }
+  .rail-step:hover { box-shadow: 0 3px 12px rgba(23, 23, 26, .10); }
+  .rail-dot { width: 8px; height: 8px; border-radius: 50%; flex: none; background: rgba(23, 23, 26, .16); }
+  .rail-label { font-size: 12.5px; font-weight: 500; color: #17171A; }
+  .rail-note { font-size: 11.5px; line-height: 1.6; color: rgba(23, 23, 26, .45); margin-top: 6px; }
+
+  [hidden] { display: none !important; }
+
+  @media (max-width: 560px) {
+    .stage { padding: 0; gap: 0; }
+    .phone {
+      width: 100vw;
+      height: 100dvh;
+      border-radius: 0;
+      box-shadow: none;
+    }
+    .state-rail { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="stage">
+
+  <div class="phone" id="phone">
+
+    <div id="cream-overlay" style="position:absolute;inset:0;background:#FBFAF6;transition:opacity 900ms ease;opacity:0"></div>
+
+    <!-- status bar -->
+    <div id="status-bar" style="position:absolute;top:0;left:0;right:0;height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 26px;z-index:40;font-size:14px;font-weight:700;letter-spacing:.2px;transition:color 700ms ease;color:rgba(251,250,246,.9)">
+      <span>9:41</span>
+      <div style="display:flex;align-items:center;gap:6px">
+        <div style="display:flex;align-items:flex-end;gap:2px;height:11px">
+          <div style="width:3px;height:4px;background:currentColor;border-radius:1px"></div>
+          <div style="width:3px;height:6px;background:currentColor;border-radius:1px"></div>
+          <div style="width:3px;height:9px;background:currentColor;border-radius:1px"></div>
+          <div style="width:3px;height:11px;background:currentColor;border-radius:1px"></div>
+        </div>
+        <div style="width:22px;height:11px;border:1.5px solid currentColor;border-radius:3px;padding:1.5px;box-sizing:border-box">
+          <div style="width:72%;height:100%;background:currentColor;border-radius:1px"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ VOICE MODE ============ -->
+    <div id="voice-screen" style="position:absolute;inset:0;z-index:10">
+
+      <div id="mic-wrap" style="position:absolute;top:0;left:0;right:0;display:flex;justify-content:center;padding-top:300px;transition:transform 750ms cubic-bezier(.2,.8,.2,1),opacity 500ms ease;transform:translateY(0) scale(1);opacity:1">
+        <div style="position:relative;width:200px;height:200px;display:flex;align-items:center;justify-content:center">
+
+          <div id="mic-rings" hidden style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center">
+            <div style="position:absolute;width:200px;height:200px;border-radius:50%;background:radial-gradient(circle,rgba(255,227,0,.30) 0%,rgba(255,227,0,0) 70%);animation:pa-ring 2.4s ease-out infinite"></div>
+            <div style="position:absolute;width:200px;height:200px;border-radius:50%;border:1.5px solid rgba(255,227,0,.5);animation:pa-ring 2.4s ease-out .8s infinite"></div>
+            <div style="position:absolute;width:200px;height:200px;border-radius:50%;border:1.5px solid rgba(255,227,0,.32);animation:pa-ring 2.4s ease-out 1.6s infinite"></div>
+          </div>
+
+          <div id="mic-circle" style="position:relative;width:96px;height:96px;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:background 600ms ease,box-shadow 600ms ease;background:rgba(251,250,246,.07);box-shadow:none;animation:none">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:5px">
+              <div id="mic-ink-a" style="width:17px;height:30px;border-radius:9px;transition:background 600ms ease;background:rgba(251,250,246,.45)"></div>
+              <div id="mic-ink-b" style="width:30px;height:15px;border-radius:0 0 16px 16px;border:2.5px solid;border-top:none;box-sizing:border-box;transition:border-color 600ms ease;border-color:rgba(251,250,246,.45)"></div>
+              <div id="mic-ink-c" style="width:2.5px;height:6px;border-radius:2px;transition:background 600ms ease;background:rgba(251,250,246,.45)"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- idle hint -->
+      <div id="idle-hint" hidden style="position:absolute;left:0;right:0;bottom:120px;text-align:center;color:rgba(251,250,246,.38);font-size:16px;letter-spacing:.4px;animation:pa-rise 700ms ease both">말씀해주세요</div>
+
+      <!-- subtitles -->
+      <div id="subtitles-block" hidden style="position:absolute;left:0;right:0;bottom:104px;padding:0 40px;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center">
+        <div id="sub-line-0" hidden style="font-size:21px;line-height:1.35;font-weight:500;color:#FBFAF6;text-wrap:pretty;animation:pa-rise 520ms cubic-bezier(.2,.8,.2,1) both;opacity:1">엄마랑 10월에</div>
+        <div id="sub-line-1" hidden style="font-size:21px;line-height:1.35;font-weight:500;color:#FBFAF6;text-wrap:pretty;animation:pa-rise 520ms cubic-bezier(.2,.8,.2,1) both;opacity:1">오사카 3박 4일</div>
+        <div id="sub-line-2" hidden style="font-size:21px;line-height:1.35;font-weight:500;color:#FBFAF6;text-wrap:pretty;animation:pa-rise 520ms cubic-bezier(.2,.8,.2,1) both;opacity:1">다녀올까 해</div>
+        <div style="display:flex;align-items:flex-end;gap:4px;height:34px;margin-top:14px;opacity:.85">
+          <div style="width:3px;background:#FFE300;border-radius:2px;animation:pa-bar 900ms ease-in-out infinite"></div>
+          <div style="width:3px;background:#FFE300;border-radius:2px;animation:pa-bar 900ms ease-in-out .15s infinite"></div>
+          <div style="width:3px;background:#FFE300;border-radius:2px;animation:pa-bar 900ms ease-in-out .3s infinite"></div>
+          <div style="width:3px;background:#FFE300;border-radius:2px;animation:pa-bar 900ms ease-in-out .45s infinite"></div>
+          <div style="width:3px;background:#FFE300;border-radius:2px;animation:pa-bar 900ms ease-in-out .6s infinite"></div>
+        </div>
+      </div>
+
+      <!-- processing -->
+      <div id="processing-block" hidden style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;animation:pa-rise 400ms ease both">
+        <div style="width:78px;height:78px;display:flex;align-items:center;justify-content:center;filter:drop-shadow(0 0 26px rgba(255,227,0,.28));animation:pa-spin 1800ms linear infinite">
+          <img src="assets/ai-mark.png" alt="AI" style="width:72px;height:72px;object-fit:contain" />
+        </div>
+        <div style="color:rgba(251,250,246,.62);font-size:15px;letter-spacing:.3px">카카오뱅크 확인 중...</div>
+      </div>
+
+      <!-- result card -->
+      <div id="result-backdrop" style="position:absolute;inset:0;background:rgba(23,23,26,.45);transition:opacity 520ms ease;opacity:0;pointer-events:none"></div>
+      <div id="result-card-wrap" style="position:absolute;left:0;right:0;bottom:0;transition:transform 720ms cubic-bezier(.16,.84,.24,1),opacity 520ms ease;pointer-events:auto;transform:translateY(115%);opacity:0">
+        <div style="background:#fff;border-radius:30px 30px 0 0;padding:14px 22px 30px;font-family:'Pretendard Variable',Pretendard,'Noto Sans KR',system-ui,sans-serif">
+          <div style="position:relative;display:flex;justify-content:center;padding-bottom:6px">
+            <div style="width:46px;height:5px;border-radius:3px;background:#E3E3E7"></div>
+            <div onclick="app.run()" style="position:absolute;top:-2px;right:0;width:34px;height:34px;border-radius:50%;background:#F4F4F6;display:flex;align-items:center;justify-content:center;cursor:pointer"><svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#4A4A52" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg></div>
+          </div>
+
+          <div style="display:flex;align-items:center;gap:14px;margin-top:14px">
+            <div style="width:52px;height:52px;border-radius:50%;flex:none;background:radial-gradient(circle at 32% 28%,#FBFBFE 0%,#E3E6ED 45%,#B9BECC 100%)"></div>
+            <div style="min-width:0">
+              <div style="font-size:17px;font-weight:800;color:#17171A;letter-spacing:-.4px">Personal Agent</div>
+              <div style="font-size:13.5px;font-weight:500;color:#9A9AA4;margin-top:3px;letter-spacing:-.3px">카카오뱅크에 확인했어요</div>
+            </div>
+          </div>
+
+          <h2 style="margin:22px 0 0;font-weight:800;font-size:27px;line-height:1.38;color:#17171A;letter-spacing:-1px;text-wrap:pretty">10월 오사카 여행,<br />예산 90만원은 가능해요.</h2>
+          <p style="margin:13px 0 0;font-size:14.5px;font-weight:500;line-height:1.55;color:#9A9AA4;letter-spacing:-.4px;text-wrap:pretty">이번 주 자금 조정만 마치면, 여행 계획엔 지장 없어요.</p>
+
+          <div style="display:flex;align-items:center;margin-top:22px;padding:20px 8px;background:#FEF9E7;border-radius:22px">
+            <div style="flex:1;min-width:0;display:flex;align-items:center;gap:12px;padding:0 10px">
+              <div style="width:50px;height:50px;border-radius:50%;flex:none;background:#E3F0FE;display:flex;align-items:center;justify-content:center"><img src="assets/icon-plane.png" alt="" style="width:30px;height:30px;object-fit:contain" /></div>
+              <div style="min-width:0">
+                <div style="font-size:12.5px;font-weight:500;color:#A0A0A8;letter-spacing:-.3px">여행 가능 예산</div>
+                <div style="font-size:21px;font-weight:800;color:#17171A;margin-top:4px;letter-spacing:-.7px">90만원</div>
+                <div style="font-size:11.5px;font-weight:500;color:#B2B2BA;margin-top:4px;letter-spacing:-.3px">현재 자금 계획 기준</div>
+              </div>
+            </div>
+            <div style="width:1px;align-self:stretch;background:rgba(23,23,26,.08);flex:none"></div>
+            <div style="flex:1;min-width:0;display:flex;align-items:center;gap:12px;padding:0 10px">
+              <div style="width:50px;height:50px;border-radius:50%;flex:none;background:#E4F7EA;display:flex;align-items:center;justify-content:center"><img src="assets/icon-chart.png" alt="" style="width:26px;height:26px;object-fit:contain" /></div>
+              <div style="min-width:0">
+                <div style="font-size:12.5px;font-weight:500;color:#A0A0A8;letter-spacing:-.3px">저축 계획</div>
+                <div style="font-size:19px;font-weight:800;color:#17171A;margin-top:4px;letter-spacing:-.6px;white-space:nowrap">그대로 유지</div>
+                <div style="font-size:11.5px;font-weight:500;color:#B2B2BA;margin-top:4px;letter-spacing:-.3px">장기저축에 영향 없어요</div>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:flex;align-items:center;gap:13px;margin-top:11px;padding:18px 16px;background:#F7F7F8;border-radius:20px;cursor:pointer">
+            <div style="width:46px;height:46px;border-radius:50%;flex:none;background:#FDF3D3;display:flex;align-items:center;justify-content:center"><img src="assets/icon-bulb.png" alt="" style="width:26px;height:26px;object-fit:contain" /></div>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:15px;font-weight:800;color:#17171A;letter-spacing:-.45px">조금 더 여유 있게 준비해볼까요?</div>
+              <div style="font-size:12.5px;font-weight:500;color:#A0A0A8;margin-top:6px;line-height:1.55;letter-spacing:-.3px;text-wrap:pretty">환율이나 예기치 못한 지출에 대비해 10~20만원 정도 추가로 계획해도 좋아요.</div>
+            </div>
+            <div style="flex:none;opacity:.3"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#17171A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg></div>
+          </div>
+
+          <button onclick="app.goHome()" style="width:100%;border:none;cursor:pointer;background:#3A3A3A;color:#F2F2F4;font-family:'Pretendard Variable',Pretendard,'Noto Sans KR',system-ui,sans-serif;font-size:16.5px;font-weight:800;letter-spacing:-.4px;padding:18px;border-radius:18px;margin-top:20px;transition:transform 160ms ease,filter 160ms ease">카카오뱅크에서 확인</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ HOME + DETAIL WRAP ============ -->
+    <div id="home-wrap" hidden>
+
+      <div id="home-scroll" style="position:absolute;inset:0;z-index:20;overflow-y:auto;background:#fff;font-family:'Pretendard Variable',Pretendard,'Noto Sans KR',system-ui,sans-serif;animation:pa-rise 600ms cubic-bezier(.2,.8,.2,1) both">
+        <div style="padding:64px 18px 132px;display:flex;flex-direction:column;gap:14px">
+
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px">
+            <div onclick="app.run()" style="display:flex;align-items:center;gap:8px;background:#F6F6F8;border-radius:999px;padding:9px 16px 9px 12px;cursor:pointer">
+              <img src="assets/ai-mark.png" alt="AI" style="width:20px;height:20px;object-fit:contain" />
+              <span style="font-size:14px;font-weight:700;color:#17171A;letter-spacing:-.3px">이번 주 지출이 평소보다 늘었어요</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:14px;flex:none">
+              <div style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;cursor:pointer"><svg xmlns="http://www.w3.org/2000/svg" width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="#17171A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg></div>
+              <div style="position:relative;width:24px;height:24px;display:flex;align-items:center;justify-content:center;cursor:pointer"><svg xmlns="http://www.w3.org/2000/svg" width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="#17171A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.268 21a2 2 0 0 0 3.464 0"></path><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"></path></svg><div style="position:absolute;top:-1px;right:0;width:7px;height:7px;border-radius:50%;background:#FF3B30;border:1.5px solid #fff;box-sizing:border-box"></div></div>
+            </div>
+          </div>
+
+          <!-- balance card -->
+          <div style="border-radius:26px;padding:22px;background:linear-gradient(118deg,#FFF3AE 0%,#FFFAD9 42%,#F4FBFA 78%,#ECF7FD 100%);box-shadow:0 0 0 1px rgba(110,205,220,.35)">
+            <div style="display:flex;align-items:center;gap:14px">
+              <div style="width:56px;height:56px;border-radius:50%;flex:none;background:#FFE300;overflow:hidden;display:flex;align-items:center;justify-content:center"><img src="assets/icon-brand.png" alt="" style="width:100%;height:100%;object-fit:cover;object-position:center" /></div>
+              <div style="flex:1;min-width:0">
+                <div style="font-size:25px;font-weight:800;color:#17171A;letter-spacing:-.8px;line-height:1.1">2,217,000<span style="font-size:19px;font-weight:700">원</span></div>
+                <div style="font-size:14px;font-weight:500;color:#82828C;margin-top:5px;letter-spacing:-.3px">김카뱅의 통장</div>
+              </div>
+              <div style="flex:none;background:rgba(255,255,255,.72);border-radius:999px;padding:12px 18px;font-size:14px;font-weight:700;color:#3A3A40">이체</div>
+            </div>
+            <div style="display:flex;gap:10px;margin-top:18px">
+              <div style="flex:1;background:rgba(255,255,255,.62);border:1px solid rgba(23,23,26,.07);border-radius:16px;padding:13px 16px;font-size:14.5px;font-weight:600;color:#3A3A40;letter-spacing:-.3px">세이프박스 990,000원</div>
+              <div style="flex:none;background:rgba(255,255,255,.62);border:1px solid rgba(23,23,26,.07);border-radius:16px;padding:13px 16px;font-size:14.5px;font-weight:600;color:#3A3A40;display:flex;align-items:center;gap:8px">저금통<img src="assets/icon-pig.png" alt="" style="width:20px;height:20px;object-fit:contain" /></div>
+            </div>
+          </div>
+
+          <!-- 1. 내가 결정할 것 -->
+          <div id="section-action" style="background:linear-gradient(180deg,#F8F8FA 0%,#F3F3F6 100%);border-radius:24px;padding:20px 22px;transition:transform 900ms cubic-bezier(.2,.8,.2,1),box-shadow 900ms ease;transform:scale(1);box-shadow:0 0 0 0 rgba(255,227,0,0)">
+            <div style="display:flex;align-items:center;gap:14px">
+              <div style="width:42px;height:42px;border-radius:50%;flex:none;overflow:hidden;background:#fff;display:flex;align-items:center;justify-content:center"><img src="assets/icon-alert.png" alt="" style="width:100%;height:100%;object-fit:cover;object-position:center" /></div>
+              <div style="flex:1;min-width:0">
+                <div style="font-size:18px;font-weight:800;color:#17171A;letter-spacing:-.5px">이번 주 조정이 필요해요</div>
+                <div style="font-size:14.5px;font-weight:500;color:#82828C;margin-top:4px;letter-spacing:-.3px">다음 수입 전 12만원이 부족할 수 있어요</div>
+              </div>
+              <div style="flex:none;width:28px;height:28px;border-radius:50%;background:#FF3B30;color:#fff;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center">1</div>
+            </div>
+            <div style="margin-top:16px;display:flex;flex-direction:column;gap:8px">
+              <div style="background:#fff;border-radius:14px;padding:13px 15px;display:flex;align-items:center;gap:10px">
+                <div style="flex:1;min-width:0;font-size:13.5px;letter-spacing:-.3px;display:flex;align-items:baseline;gap:8px"><span style="font-weight:700;color:#3A3A40">26주적금</span><span style="font-weight:400;color:#B4B4BC">이번 회차 미루기</span></div>
+                <div style="flex:none;font-size:13.5px;font-weight:800;color:#17171A">+250,000원</div>
+              </div>
+              <div style="background:#fff;border-radius:14px;padding:13px 15px;display:flex;align-items:center;gap:10px">
+                <div style="flex:1;min-width:0;font-size:13.5px;letter-spacing:-.3px;display:flex;align-items:baseline;gap:8px"><span style="font-weight:700;color:#3A3A40">생활비통장에서</span><span style="font-weight:400;color:#B4B4BC">비상금 가져오기</span></div>
+                <div style="flex:none;font-size:13.5px;font-weight:800;color:#17171A">+500,000원</div>
+              </div>
+            </div>
+            <div onclick="app.openDetail('action')" style="margin-top:12px;background:#35353D;border-radius:16px;padding:14px;text-align:center;font-size:15px;font-weight:700;color:#fff;cursor:pointer">함께 조정하기</div>
+          </div>
+
+          <!-- 2. 함께한 결정 -->
+          <div onclick="app.openDetail('decisions')" style="background:linear-gradient(180deg,#FFEC85 0%,#FFE24E 100%);border-radius:24px;padding:20px 22px;display:flex;align-items:center;gap:14px;cursor:pointer">
+            <div style="width:42px;height:42px;border-radius:50%;flex:none;overflow:hidden;background:#fff;display:flex;align-items:center;justify-content:center"><img src="assets/icon-check.png" alt="" style="width:100%;height:100%;object-fit:cover;object-position:center" /></div>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:18px;font-weight:800;color:#17171A;letter-spacing:-.5px">함께한 결정</div>
+              <div style="font-size:14.5px;font-weight:500;color:rgba(23,23,26,.6);margin-top:4px;letter-spacing:-.3px">AI와 함께한 결정이 4건 있어요</div>
+            </div>
+            <div style="flex:none;display:flex;align-items:center;gap:8px"><div style="width:26px;height:26px;border-radius:50%;background:rgba(23,23,26,.12);font-size:13px;font-weight:700;color:#17171A;display:flex;align-items:center;justify-content:center">4</div><div style="font-size:20px;font-weight:600;color:rgba(23,23,26,.45);line-height:1">›</div></div>
+          </div>
+
+          <!-- 3. 앞으로 함께할 계획 -->
+          <div onclick="app.openDetail('plans')" style="background:linear-gradient(180deg,#F8F8FA 0%,#F3F3F6 100%);border-radius:24px;padding:20px 22px;display:flex;align-items:center;gap:14px;cursor:pointer">
+            <div style="width:42px;height:42px;border-radius:50%;flex:none;overflow:hidden;background:#fff;display:flex;align-items:center;justify-content:center"><img src="assets/icon-plan.png" alt="" style="width:100%;height:100%;object-fit:cover;object-position:center" /></div>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:18px;font-weight:800;color:#17171A;letter-spacing:-.5px">앞으로 함께할 계획</div>
+              <div style="font-size:14.5px;font-weight:500;color:#82828C;margin-top:4px;letter-spacing:-.3px">계획 중인 금융 목표가 3개 있어요</div>
+            </div>
+            <div style="flex:none;display:flex;align-items:center;gap:8px"><div style="width:26px;height:26px;border-radius:50%;background:rgba(23,23,26,.07);font-size:13px;font-weight:700;color:#4A4A52;display:flex;align-items:center;justify-content:center">3</div><div style="font-size:20px;font-weight:600;color:rgba(23,23,26,.3);line-height:1">›</div></div>
+          </div>
+
+          <!-- 4. 카카오뱅크가 이해한 나 -->
+          <div onclick="app.openDetail('principles')" style="border-radius:26px;padding:24px 22px;background:linear-gradient(170deg,#FFF6C4 0%,#FFFBE6 55%,#FDFCF4 100%);cursor:pointer">
+            <div style="display:flex;align-items:center;gap:9px">
+              <img src="assets/ai-mark.png" alt="AI" style="width:22px;height:22px;object-fit:contain" />
+              <div style="font-size:20px;font-weight:800;color:#17171A;letter-spacing:-.6px">카카오뱅크가 이해한 나</div>
+            </div>
+            <div style="font-size:14.5px;font-weight:500;color:#7C7A6E;margin-top:8px;line-height:1.55;letter-spacing:-.3px">AI가 대화와 금융 행동을 바탕으로 이해한 나의 금융 원칙이에요.</div>
+            <div style="display:flex;flex-direction:column;gap:9px;margin-top:18px">
+              <div style="background:#fff;border-radius:18px;padding:16px 18px;font-size:15px;font-weight:600;color:#17171A;letter-spacing:-.3px;line-height:1.5">"여행에서는 경험에 조금 더 써도 괜찮아요."</div>
+              <div style="background:rgba(255,255,255,.72);border-radius:18px;padding:16px 18px;font-size:15px;font-weight:600;color:rgba(23,23,26,.62);letter-spacing:-.3px">"장기저축은 가능한 유지해요."</div>
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:2px 6px 0">
+                <div style="font-size:13.5px;font-weight:600;color:#9A9788">외 1개의 금융 원칙</div>
+                <div style="font-size:20px;font-weight:600;color:#9A9788;line-height:1">›</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 이번 주 지출 흐름 -->
+          <div style="background:#FBFAF6;border:1px solid rgba(23,23,26,.06);border-radius:24px;padding:20px 18px 16px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;padding:0 4px">
+              <div style="font-size:15.5px;font-weight:800;color:#17171A;letter-spacing:-.4px">이번 주 지출 흐름</div>
+              <div style="display:flex;align-items:center;gap:3px;font-size:13px;font-weight:600;color:#9A988E;cursor:pointer">전체보기<span style="font-size:15px;line-height:1">›</span></div>
+            </div>
+            <div style="font-size:13px;font-weight:500;color:#9A988E;padding:0 4px 14px;letter-spacing:-.3px">9/13에 지출이 가장 많았어요</div>
+            <div style="display:flex;align-items:flex-end;gap:4px">
+              <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:7px">
+                <div style="font-size:10.5px;font-weight:600;color:#9A988E;letter-spacing:-.2px">8.4만</div>
+                <div style="width:100%;height:96px;display:flex;align-items:flex-end;justify-content:center"><div style="width:11px;height:58%;border-radius:6px;background:#E7E4DB"></div></div>
+                <div style="font-size:10.5px;font-weight:500;color:#A9A79E;letter-spacing:-.2px">9/9</div>
+              </div>
+              <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:7px">
+                <div style="font-size:10.5px;font-weight:600;color:#9A988E;letter-spacing:-.2px">6.2만</div>
+                <div style="width:100%;height:96px;display:flex;align-items:flex-end;justify-content:center"><div style="width:11px;height:42%;border-radius:6px;background:#E7E4DB"></div></div>
+                <div style="font-size:10.5px;font-weight:500;color:#A9A79E;letter-spacing:-.2px">9/10</div>
+              </div>
+              <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:7px">
+                <div style="font-size:10.5px;font-weight:600;color:#9A988E;letter-spacing:-.2px">12.8만</div>
+                <div style="width:100%;height:96px;display:flex;align-items:flex-end;justify-content:center"><div style="width:11px;height:88%;border-radius:6px;background:#E7E4DB"></div></div>
+                <div style="font-size:10.5px;font-weight:500;color:#A9A79E;letter-spacing:-.2px">9/11</div>
+              </div>
+              <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:7px">
+                <div style="font-size:10.5px;font-weight:600;color:#9A988E;letter-spacing:-.2px">9.1만</div>
+                <div style="width:100%;height:96px;display:flex;align-items:flex-end;justify-content:center"><div style="width:11px;height:62%;border-radius:6px;background:#E7E4DB"></div></div>
+                <div style="font-size:10.5px;font-weight:500;color:#A9A79E;letter-spacing:-.2px">9/12</div>
+              </div>
+              <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:7px">
+                <div style="font-size:10.5px;font-weight:800;color:#17171A;letter-spacing:-.2px">14.6만</div>
+                <div style="width:100%;height:96px;display:flex;align-items:flex-end;justify-content:center"><div style="width:11px;height:100%;border-radius:6px;background:#FFE300"></div></div>
+                <div style="font-size:10.5px;font-weight:700;color:#17171A;letter-spacing:-.2px">9/13</div>
+              </div>
+              <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:7px">
+                <div style="font-size:10.5px;font-weight:600;color:#9A988E;letter-spacing:-.2px">7.3만</div>
+                <div style="width:100%;height:96px;display:flex;align-items:flex-end;justify-content:center"><div style="width:11px;height:50%;border-radius:6px;background:#E7E4DB"></div></div>
+                <div style="font-size:10.5px;font-weight:500;color:#A9A79E;letter-spacing:-.2px">9/14</div>
+              </div>
+              <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:7px">
+                <div style="font-size:10.5px;font-weight:600;color:#9A988E;letter-spacing:-.2px">5.1만</div>
+                <div style="width:100%;height:96px;display:flex;align-items:flex-end;justify-content:center"><div style="width:11px;height:35%;border-radius:6px;background:#E7E4DB"></div></div>
+                <div style="font-size:10.5px;font-weight:500;color:#A9A79E;letter-spacing:-.2px">9/15</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- opaque band behind status bar -->
+      <div style="position:absolute;top:0;left:0;right:0;height:54px;z-index:30;background:#fff"></div>
+      <div style="position:absolute;top:54px;left:0;right:0;height:16px;z-index:30;background:linear-gradient(180deg,#fff 0%,rgba(255,255,255,0) 100%);pointer-events:none"></div>
+
+      <!-- bottom nav -->
+      <div id="bottom-nav" style="position:absolute;left:0;right:0;bottom:0;z-index:35;background:#fff;border-top:1px solid rgba(23,23,26,.07);padding:11px 6px calc(24px + env(safe-area-inset-bottom, 0px));align-items:flex-start;display:flex">
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer">
+          <div style="position:relative;width:26px;height:26px;display:flex;align-items:center;justify-content:center;opacity:1"><svg xmlns="http://www.w3.org/2000/svg" width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="#1B2559" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"></path><path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg></div>
+          <div style="font-family:'Pretendard Variable',Pretendard,'Noto Sans KR',system-ui,sans-serif;font-size:10.5px;font-weight:700;color:#1B2559;opacity:1;letter-spacing:-.2px">홈</div>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer">
+          <div style="position:relative;width:26px;height:26px;display:flex;align-items:center;justify-content:center;opacity:0.5"><svg xmlns="http://www.w3.org/2000/svg" width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="#1B2559" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12v10H4V12"></path><path d="M2 7h20v5H2z"></path><path d="M12 22V7"></path><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7"></path><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7"></path></svg></div>
+          <div style="font-family:'Pretendard Variable',Pretendard,'Noto Sans KR',system-ui,sans-serif;font-size:10.5px;font-weight:500;color:#1B2559;opacity:0.55;letter-spacing:-.2px">혜택</div>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer">
+          <div style="position:relative;width:26px;height:26px;display:flex;align-items:center;justify-content:center;opacity:0.5"><svg xmlns="http://www.w3.org/2000/svg" width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="#1B2559" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"></path></svg></div>
+          <div style="font-family:'Pretendard Variable',Pretendard,'Noto Sans KR',system-ui,sans-serif;font-size:10.5px;font-weight:500;color:#1B2559;opacity:0.55;letter-spacing:-.2px">AI</div>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer">
+          <div style="position:relative;width:26px;height:26px;display:flex;align-items:center;justify-content:center;opacity:0.5"><svg xmlns="http://www.w3.org/2000/svg" width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="#1B2559" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 7h6v6"></path><path d="m22 7-8.5 8.5-5-5L2 17"></path></svg><div style="position:absolute;top:-1px;right:-1px;width:6px;height:6px;border-radius:50%;background:#FF3B30"></div></div>
+          <div style="font-family:'Pretendard Variable',Pretendard,'Noto Sans KR',system-ui,sans-serif;font-size:10.5px;font-weight:500;color:#1B2559;opacity:0.55;letter-spacing:-.2px">투자</div>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer">
+          <div style="position:relative;width:26px;height:26px;display:flex;align-items:center;justify-content:center;opacity:0.5"><svg xmlns="http://www.w3.org/2000/svg" width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="#1B2559" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16"></path><path d="M4 12h16"></path><path d="M4 19h16"></path></svg><div style="position:absolute;top:-1px;right:-1px;width:6px;height:6px;border-radius:50%;background:#FF3B30"></div></div>
+          <div style="font-family:'Pretendard Variable',Pretendard,'Noto Sans KR',system-ui,sans-serif;font-size:10.5px;font-weight:500;color:#1B2559;opacity:0.55;letter-spacing:-.2px">전체</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- DETAIL: 함께한 결정 -->
+    <div id="detail-decisions" hidden style="position:absolute;inset:0;z-index:24;background:#fff;font-family:'Pretendard Variable',Pretendard,'Noto Sans KR',system-ui,sans-serif;animation:pa-rise 420ms cubic-bezier(.2,.8,.2,1) both">
+      <div style="position:absolute;inset:0;overflow-y:auto">
+        <div style="padding:104px 18px 40px;display:flex;flex-direction:column">
+        <div style="display:flex;gap:14px;align-items:flex-start;padding:2px 4px 20px">
+          <img src="assets/icon-check.png" alt="" style="width:56px;height:56px;object-fit:contain;flex:none" />
+          <div style="flex:1;min-width:0;padding-top:2px">
+            <div style="font-size:21px;font-weight:800;color:#17171A;letter-spacing:-.7px;line-height:1.35;text-wrap:pretty">AI와 함께한 결정이<br />총 4건 있어요.</div>
+            <div style="font-size:13px;font-weight:500;color:#8A8A93;margin-top:14px;line-height:1.55;letter-spacing:-.3px;text-wrap:pretty">일상의 순간마다, 더 나은 선택을 할 수 있도록 AI가 함께했어요.</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:7px;overflow-x:auto;padding:0 2px 18px">
+          <div style="flex:none;padding:9px 16px;border-radius:999px;font-size:13px;font-weight:700;letter-spacing:-.3px;cursor:pointer;background:#17171A;color:#fff">전체</div>
+          <div style="flex:none;padding:9px 16px;border-radius:999px;font-size:13px;font-weight:500;letter-spacing:-.3px;cursor:pointer;background:#F4F4F6;color:#6E6E78">여행</div>
+          <div style="flex:none;padding:9px 16px;border-radius:999px;font-size:13px;font-weight:500;letter-spacing:-.3px;cursor:pointer;background:#F4F4F6;color:#6E6E78">주거</div>
+          <div style="flex:none;padding:9px 16px;border-radius:999px;font-size:13px;font-weight:500;letter-spacing:-.3px;cursor:pointer;background:#F4F4F6;color:#6E6E78">쇼핑·전자기기</div>
+          <div style="flex:none;padding:9px 16px;border-radius:999px;font-size:13px;font-weight:500;letter-spacing:-.3px;cursor:pointer;background:#F4F4F6;color:#6E6E78">구독</div>
+        </div>
+          <div style="font-size:14px;font-weight:700;color:#17171A;letter-spacing:-.4px;padding:0 4px 11px">2026년 9월</div>
+          <div style="display:flex;flex-direction:column;gap:10px">
+          <div style="background:#F7F7F8;border:1px solid rgba(23,23,26,.05);border-radius:22px;padding:17px;display:flex;gap:13px;align-items:flex-start;cursor:pointer">
+            <img src="assets/icon-plane.png" alt="" style="width:38px;height:38px;object-fit:contain;flex:none" />
+            <div style="flex:1;min-width:0">
+              <div style="display:flex;gap:10px;align-items:baseline">
+                <div style="flex:1;min-width:0;font-size:15px;font-weight:700;color:#17171A;line-height:1.45;letter-spacing:-.4px;text-wrap:pretty">오사카 여행 예산 90만원으로 설정했어요.</div>
+                <div style="flex:none;font-size:11.5px;font-weight:500;color:#A3A3AC">9월 12일</div>
+              </div>
+              <div style="font-size:12.5px;font-weight:400;color:#8A8A93;margin-top:6px;line-height:1.55;letter-spacing:-.3px;text-wrap:pretty">여행 일정과 최근 지출을 고려해 적정 예산을 제안했어요.</div>
+            </div>
+            <div style="flex:none;align-self:center;opacity:.3"><svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#17171A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg></div>
+          </div>
+          <div style="background:#F7F7F8;border:1px solid rgba(23,23,26,.05);border-radius:22px;padding:17px;display:flex;gap:13px;align-items:flex-start;cursor:pointer">
+            <img src="assets/icon-house.png" alt="" style="width:38px;height:38px;object-fit:contain;flex:none" />
+            <div style="flex:1;min-width:0">
+              <div style="display:flex;gap:10px;align-items:baseline">
+                <div style="flex:1;min-width:0;font-size:15px;font-weight:700;color:#17171A;line-height:1.45;letter-spacing:-.4px;text-wrap:pretty">이사 후보 3곳의 주거비를 검토했어요.</div>
+                <div style="flex:none;font-size:11.5px;font-weight:500;color:#A3A3AC">9월 8일</div>
+              </div>
+              <div style="font-size:12.5px;font-weight:400;color:#8A8A93;margin-top:6px;line-height:1.55;letter-spacing:-.3px;text-wrap:pretty">예산, 위치, 교통을 비교해 후보지를 분석했어요.</div>
+            </div>
+            <div style="flex:none;align-self:center;opacity:.3"><svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#17171A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg></div>
+          </div>
+          <div style="background:#F7F7F8;border:1px solid rgba(23,23,26,.05);border-radius:22px;padding:17px;display:flex;gap:13px;align-items:flex-start;cursor:pointer">
+            <img src="assets/icon-laptop.png" alt="" style="width:38px;height:38px;object-fit:contain;flex:none" />
+            <div style="flex:1;min-width:0">
+              <div style="display:flex;gap:10px;align-items:baseline">
+                <div style="flex:1;min-width:0;font-size:15px;font-weight:700;color:#17171A;line-height:1.45;letter-spacing:-.4px;text-wrap:pretty">노트북 구매를 여행 이후로 미뤘어요.</div>
+                <div style="flex:none;font-size:11.5px;font-weight:500;color:#A3A3AC">9월 5일</div>
+              </div>
+              <div style="font-size:12.5px;font-weight:400;color:#8A8A93;margin-top:6px;line-height:1.55;letter-spacing:-.3px;text-wrap:pretty">단기 지출 부담을 줄이기 위해 시점을 조정했어요.</div>
+            </div>
+            <div style="flex:none;align-self:center;opacity:.3"><svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#17171A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg></div>
+          </div>
+          <div style="background:#F7F7F8;border:1px solid rgba(23,23,26,.05);border-radius:22px;padding:17px;display:flex;gap:13px;align-items:flex-start;cursor:pointer">
+            <div style="width:42px;height:42px;border-radius:13px;flex:none;background:#F1F1F4;display:flex;align-items:center;justify-content:center"><svg xmlns="http://www.w3.org/2000/svg" width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#8E8E98" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1.4"></circle><circle cx="18.5" cy="12" r="1.4"></circle><circle cx="5.5" cy="12" r="1.4"></circle></svg></div>
+            <div style="flex:1;min-width:0">
+              <div style="display:flex;gap:10px;align-items:baseline">
+                <div style="flex:1;min-width:0;font-size:15px;font-weight:700;color:#17171A;line-height:1.45;letter-spacing:-.4px;text-wrap:pretty">반복결제 2건을 자동으로 관리했어요.</div>
+                <div style="flex:none;font-size:11.5px;font-weight:500;color:#A3A3AC">9월 1일</div>
+              </div>
+              <div style="font-size:12.5px;font-weight:400;color:#8A8A93;margin-top:6px;line-height:1.55;letter-spacing:-.3px;text-wrap:pretty">불필요한 구독은 해지하고, 필요한 구독은 유지했어요.</div>
+            </div>
+            <div style="flex:none;align-self:center;opacity:.3"><svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#17171A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg></div>
+          </div>
+          </div>
+        </div>
+      </div>
+      <div style="position:absolute;top:0;left:0;right:0;height:96px;z-index:30;background:#fff;display:flex;align-items:flex-end;padding:0 16px 12px">
+        <div onclick="app.jump('home')" style="width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none"><svg xmlns="http://www.w3.org/2000/svg" width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="#17171A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"></path><path d="M19 12H5"></path></svg></div>
+        <div style="flex:1;text-align:center;font-size:17px;font-weight:700;color:#17171A;letter-spacing:-.4px;margin-right:34px">함께한 결정</div>
+      </div>
+    </div>
+
+    <!-- DETAIL: 앞으로 함께할 계획 -->
+    <div id="detail-plans" hidden style="position:absolute;inset:0;z-index:24;background:#fff;font-family:'Pretendard Variable',Pretendard,'Noto Sans KR',system-ui,sans-serif;animation:pa-rise 420ms cubic-bezier(.2,.8,.2,1) both">
+      <div style="position:absolute;inset:0;overflow-y:auto">
+        <div style="padding:104px 18px 40px;display:flex;flex-direction:column">
+        <div style="display:flex;gap:14px;align-items:flex-start;padding:2px 4px 20px">
+          <img src="assets/icon-plan.png" alt="" style="width:56px;height:56px;object-fit:contain;flex:none" />
+          <div style="flex:1;min-width:0;padding-top:2px">
+            <div style="font-size:21px;font-weight:800;color:#17171A;letter-spacing:-.7px;line-height:1.35;text-wrap:pretty">계획 중인 금융 목표가<br />총 3개 있어요.</div>
+            <div style="font-size:13px;font-weight:500;color:#8A8A93;margin-top:14px;line-height:1.55;letter-spacing:-.3px;text-wrap:pretty">AI와 함께, 더 나은 내일을 준비하고 있어요.</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:7px;overflow-x:auto;padding:0 2px 18px">
+          <div style="flex:none;padding:9px 16px;border-radius:999px;font-size:13px;font-weight:700;letter-spacing:-.3px;cursor:pointer;background:#17171A;color:#fff">전체</div>
+          <div style="flex:none;padding:9px 16px;border-radius:999px;font-size:13px;font-weight:500;letter-spacing:-.3px;cursor:pointer;background:#F4F4F6;color:#6E6E78">여행</div>
+          <div style="flex:none;padding:9px 16px;border-radius:999px;font-size:13px;font-weight:500;letter-spacing:-.3px;cursor:pointer;background:#F4F4F6;color:#6E6E78">주거</div>
+          <div style="flex:none;padding:9px 16px;border-radius:999px;font-size:13px;font-weight:500;letter-spacing:-.3px;cursor:pointer;background:#F4F4F6;color:#6E6E78">저축</div>
+          <div style="flex:none;padding:9px 16px;border-radius:999px;font-size:13px;font-weight:500;letter-spacing:-.3px;cursor:pointer;background:#F4F4F6;color:#6E6E78">기타</div>
+        </div>
+          <div style="display:flex;flex-direction:column;gap:11px">
+          <div style="background:#F7F7F8;border:1px solid rgba(23,23,26,.05);border-radius:22px;padding:18px;cursor:pointer">
+            <div style="display:flex;gap:13px;align-items:flex-start">
+              <img src="assets/icon-plane.png" alt="" style="width:40px;height:40px;object-fit:contain;flex:none" />
+              <div style="flex:1;min-width:0">
+                <div style="display:flex;gap:8px;align-items:center">
+                  <div style="flex:1;min-width:0;font-size:16px;font-weight:800;color:#17171A;letter-spacing:-.5px">10월 오사카 여행</div>
+                  <div style="flex:none;padding:5px 11px;border-radius:999px;background:#E4F1FE;font-size:11.5px;font-weight:700;color:#2B7FD4">계획 중</div>
+                </div>
+                <div style="font-size:12.5px;font-weight:400;color:#8A8A93;margin-top:7px;line-height:1.55;letter-spacing:-.3px;text-wrap:pretty">항공권, 숙소, 현지 예산을 고려해 예산을 준비하고 있어요.</div>
+              </div>
+            </div>
+            <div style="display:flex;gap:9px;margin-top:15px">
+              <div style="flex:1;background:#fff;border:1px solid rgba(23,23,26,.07);border-radius:15px;padding:12px 14px;display:flex;gap:9px;align-items:center">
+                <div style="opacity:.42;flex:none"><svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#17171A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"></path><path d="M16 2v4"></path><rect x="3" y="4" width="18" height="18" rx="2"></rect><path d="M3 10h18"></path></svg></div>
+                <div style="min-width:0"><div style="font-size:10.5px;font-weight:500;color:#A3A3AC">목표 시기</div><div style="font-size:13px;font-weight:700;color:#17171A;margin-top:3px;letter-spacing:-.3px">2031년 10월</div></div>
+              </div>
+              <div style="flex:1;background:#fff;border:1px solid rgba(23,23,26,.07);border-radius:15px;padding:12px 14px;display:flex;gap:9px;align-items:center">
+                <div style="opacity:.42;flex:none"><svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#17171A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="13" rx="2"></rect><path d="M2 11h20"></path><path d="M17 15h2"></path></svg></div>
+                <div style="min-width:0"><div style="font-size:10.5px;font-weight:500;color:#A3A3AC">목표 예산</div><div style="font-size:13px;font-weight:700;color:#17171A;margin-top:3px;letter-spacing:-.3px">약 90만원</div></div>
+              </div>
+            </div>
+          </div>
+          <div style="background:#F7F7F8;border:1px solid rgba(23,23,26,.05);border-radius:22px;padding:18px;cursor:pointer">
+            <div style="display:flex;gap:13px;align-items:flex-start">
+              <img src="assets/icon-house.png" alt="" style="width:40px;height:40px;object-fit:contain;flex:none" />
+              <div style="flex:1;min-width:0">
+                <div style="display:flex;gap:8px;align-items:center">
+                  <div style="flex:1;min-width:0;font-size:16px;font-weight:800;color:#17171A;letter-spacing:-.5px">연말 이사 준비</div>
+                  <div style="flex:none;padding:5px 11px;border-radius:999px;background:#E4F1FE;font-size:11.5px;font-weight:700;color:#2B7FD4">계획 중</div>
+                </div>
+                <div style="font-size:12.5px;font-weight:400;color:#8A8A93;margin-top:7px;line-height:1.55;letter-spacing:-.3px;text-wrap:pretty">이사 지역과 주거비를 비교하며 예산을 계획하고 있어요.</div>
+              </div>
+            </div>
+            <div style="display:flex;gap:9px;margin-top:15px">
+              <div style="flex:1;background:#fff;border:1px solid rgba(23,23,26,.07);border-radius:15px;padding:12px 14px;display:flex;gap:9px;align-items:center">
+                <div style="opacity:.42;flex:none"><svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#17171A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"></path><path d="M16 2v4"></path><rect x="3" y="4" width="18" height="18" rx="2"></rect><path d="M3 10h18"></path></svg></div>
+                <div style="min-width:0"><div style="font-size:10.5px;font-weight:500;color:#A3A3AC">목표 시기</div><div style="font-size:13px;font-weight:700;color:#17171A;margin-top:3px;letter-spacing:-.3px">2031년 12월</div></div>
+              </div>
+              <div style="flex:1;background:#fff;border:1px solid rgba(23,23,26,.07);border-radius:15px;padding:12px 14px;display:flex;gap:9px;align-items:center">
+                <div style="opacity:.42;flex:none"><svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#17171A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="13" rx="2"></rect><path d="M2 11h20"></path><path d="M17 15h2"></path></svg></div>
+                <div style="min-width:0"><div style="font-size:10.5px;font-weight:500;color:#A3A3AC">목표 예산</div><div style="font-size:13px;font-weight:700;color:#17171A;margin-top:3px;letter-spacing:-.3px">미정</div></div>
+              </div>
+            </div>
+          </div>
+          <div style="background:#F7F7F8;border:1px solid rgba(23,23,26,.05);border-radius:22px;padding:18px;cursor:pointer">
+            <div style="display:flex;gap:13px;align-items:flex-start">
+              <img src="assets/icon-pig.png" alt="" style="width:40px;height:40px;object-fit:contain;flex:none" />
+              <div style="flex:1;min-width:0">
+                <div style="display:flex;gap:8px;align-items:center">
+                  <div style="flex:1;min-width:0;font-size:16px;font-weight:800;color:#17171A;letter-spacing:-.5px">비상금 500만원 만들기</div>
+                  <div style="flex:none;padding:5px 11px;border-radius:999px;background:#E4F1FE;font-size:11.5px;font-weight:700;color:#2B7FD4">계획 중</div>
+                </div>
+                <div style="font-size:12.5px;font-weight:400;color:#8A8A93;margin-top:7px;line-height:1.55;letter-spacing:-.3px;text-wrap:pretty">예기치 못한 상황에 대비해 비상금을 모으고 있어요.</div>
+              </div>
+            </div>
+            <div style="display:flex;gap:9px;margin-top:15px">
+              <div style="flex:1;background:#fff;border:1px solid rgba(23,23,26,.07);border-radius:15px;padding:12px 14px;display:flex;gap:9px;align-items:center">
+                <div style="opacity:.42;flex:none"><svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#17171A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"></path><path d="M16 2v4"></path><rect x="3" y="4" width="18" height="18" rx="2"></rect><path d="M3 10h18"></path></svg></div>
+                <div style="min-width:0"><div style="font-size:10.5px;font-weight:500;color:#A3A3AC">목표 시기</div><div style="font-size:13px;font-weight:700;color:#17171A;margin-top:3px;letter-spacing:-.3px">2032년 상반기</div></div>
+              </div>
+              <div style="flex:1;background:#fff;border:1px solid rgba(23,23,26,.07);border-radius:15px;padding:12px 14px;display:flex;gap:9px;align-items:center">
+                <div style="opacity:.42;flex:none"><svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#17171A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="13" rx="2"></rect><path d="M2 11h20"></path><path d="M17 15h2"></path></svg></div>
+                <div style="min-width:0"><div style="font-size:10.5px;font-weight:500;color:#A3A3AC">목표 금액</div><div style="font-size:13px;font-weight:700;color:#17171A;margin-top:3px;letter-spacing:-.3px">500만원</div></div>
+              </div>
+            </div>
+          </div>
+          <div style="margin-top:13px;background:linear-gradient(100deg,#DCEFFB 0%,#EAF3F3 45%,#FCF3C4 100%);border-radius:22px;padding:17px 19px;display:flex;align-items:center;gap:11px;cursor:pointer">
+            <div style="flex:none"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4FA3D8" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"></path></svg></div>
+            <div style="flex:1;font-size:14.5px;font-weight:700;color:#17171A;letter-spacing:-.4px">새로운 계획을 함께 만들어볼까요?</div>
+            <div style="flex:none;opacity:.35"><svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#17171A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg></div>
+          </div>
+        </div>
+        </div>
+      </div>
+      <div style="position:absolute;top:0;left:0;right:0;height:96px;z-index:30;background:#fff;display:flex;align-items:flex-end;padding:0 16px 12px">
+        <div onclick="app.jump('home')" style="width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none"><svg xmlns="http://www.w3.org/2000/svg" width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="#17171A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"></path><path d="M19 12H5"></path></svg></div>
+        <div style="flex:1;text-align:center;font-size:17px;font-weight:700;color:#17171A;letter-spacing:-.4px;margin-right:34px">앞으로 함께할 계획</div>
+      </div>
+    </div>
+
+    <!-- DETAIL: 내 결정이 필요해요 -->
+    <div id="detail-action" hidden style="position:absolute;inset:0;z-index:24;background:#fff;font-family:'Pretendard Variable',Pretendard,'Noto Sans KR',system-ui,sans-serif;animation:pa-rise 420ms cubic-bezier(.2,.8,.2,1) both">
+      <div style="position:absolute;inset:0;overflow-y:auto">
+        <div style="padding:104px 18px 40px;display:flex;flex-direction:column">
+        <div style="display:flex;gap:14px;align-items:flex-start;padding:2px 4px 20px">
+          <img src="assets/icon-alert.png" alt="" style="width:56px;height:56px;object-fit:contain;flex:none" />
+          <div style="flex:1;min-width:0;padding-top:2px">
+            <div style="font-size:21px;font-weight:800;color:#17171A;letter-spacing:-.7px;line-height:1.35;text-wrap:pretty">확인이 필요한 항목이<br />총 1건 있어요.</div>
+            <div style="font-size:13px;font-weight:500;color:#8A8A93;margin-top:14px;line-height:1.55;letter-spacing:-.3px;text-wrap:pretty">지금 결정하면, 더 좋은 결과를 만들 수 있어요.</div>
+          </div>
+        </div>
+          <div style="background:#FBFAF6;border:1px solid rgba(23,23,26,.07);border-radius:20px;padding:17px;display:flex;gap:12px;align-items:flex-start">
+            <img src="assets/icon-alert.png" alt="" style="width:36px;height:36px;object-fit:contain;flex:none" />
+            <div style="flex:1;min-width:0">
+              <div style="font-size:15px;font-weight:800;color:#17171A;letter-spacing:-.45px;line-height:1.4;text-wrap:pretty">다음 수입 전 12만원이 부족할 수 있어요.</div>
+              <div style="font-size:12.5px;font-weight:400;color:#8A8A93;margin-top:7px;line-height:1.55;letter-spacing:-.3px;text-wrap:pretty">이번 주 지출이 평소보다 늘어나면서 현금흐름에 영향을 주고 있어요.</div>
+            </div>
+          </div>
+          <div style="margin-top:20px">
+            <div style="font-size:14px;font-weight:800;color:#17171A;letter-spacing:-.4px;padding:0 2px 6px">AI 예상 영향</div>
+            <div style="background:#fff;border:1px solid rgba(23,23,26,.07);border-radius:18px;padding:5px 15px">
+              <div style="display:flex;align-items:center;gap:10px;padding:11px 2px">
+                <div style="flex:none"><svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#5C63C9" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20V10"></path><path d="M12 20V4"></path><path d="M19 20v-6"></path></svg></div>
+                <div style="flex:1;min-width:0;font-size:13px;font-weight:500;color:#5C5C66;letter-spacing:-.3px">이번 주 지출</div>
+                <div style="flex:none;font-size:13px;font-weight:700;color:#E23B2E;letter-spacing:-.3px">평소보다 43,000원 늘었어요.</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;padding:11px 2px">
+                <div style="flex:none"><svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#8E8E98" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2.5"></rect><path d="M2 10h20"></path></svg></div>
+                <div style="flex:1;min-width:0;font-size:13px;font-weight:500;color:#5C5C66;letter-spacing:-.3px">다음 수입 전 예상 잔액</div>
+                <div style="flex:none;font-size:13px;font-weight:800;color:#E23B2E;letter-spacing:-.3px">약 -120,000원</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;padding:11px 2px">
+                <div style="flex:none"><svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#12A150" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="m8.5 12 2.5 2.5 4.5-4.5"></path></svg></div>
+                <div style="flex:1;min-width:0;font-size:13px;font-weight:500;color:#5C5C66;letter-spacing:-.3px">조정 시 확보 가능한 여력</div>
+                <div style="flex:none;font-size:13px;font-weight:800;color:#12A150;letter-spacing:-.3px">최대 940,000원</div>
+              </div>
+            </div>
+          </div>
+          <div style="margin-top:20px;background:linear-gradient(100deg,#DCEFFB 0%,#EDF4F0 46%,#FDF3BE 100%);border-radius:20px;padding:17px 19px;display:flex;gap:11px;align-items:flex-start">
+            <img src="assets/ai-mark.png" alt="" style="width:22px;height:22px;object-fit:contain;flex:none;margin-top:1px" />
+            <div style="flex:1;min-width:0">
+              <div style="font-size:14.5px;font-weight:800;color:#17171A;letter-spacing:-.4px">AI 제안</div>
+              <div style="font-size:12.5px;font-weight:500;color:#5F6560;margin-top:6px;line-height:1.6;letter-spacing:-.3px;text-wrap:pretty">아래 중 필요한 만큼만 선택해서 조정할 수 있어요. 모두 원금 손실 없이 되돌릴 수 있어요.</div>
+            </div>
+          </div>
+          <div style="margin-top:4px">
+            <label style="display:flex;gap:11px;align-items:flex-start;padding:14px 2px;border-top:1px solid rgba(23,23,26,.07);position:relative;z-index:1;cursor:pointer">
+              <input type="checkbox" id="pick-0" onchange="app.togglePick(0)" style="width:20px;height:20px;flex:none;margin:3px 0 0;accent-color:#17171A;cursor:pointer" />
+              <img src="assets/icon-pig.png" alt="" style="width:34px;height:34px;object-fit:contain;flex:none" />
+              <div style="flex:1;min-width:0">
+                <div style="font-size:14px;font-weight:700;color:#17171A;letter-spacing:-.4px;line-height:1.4;text-wrap:pretty">26주적금 이번 회차 미루기</div>
+                <div style="font-size:12px;font-weight:400;color:#A3A3AC;margin-top:5px;line-height:1.5;letter-spacing:-.3px;text-wrap:pretty">긴급 출금 기능으로 원금 손실 없이 되돌릴 수 있어요.</div>
+              </div>
+              <div style="flex:none;font-size:13.5px;font-weight:800;color:#17171A;letter-spacing:-.3px;margin-top:2px">+250,000원</div>
+            </label>
+            <label style="display:flex;gap:11px;align-items:flex-start;padding:14px 2px;border-top:1px solid rgba(23,23,26,.07);position:relative;z-index:1;cursor:pointer">
+              <input type="checkbox" id="pick-1" onchange="app.togglePick(1)" style="width:20px;height:20px;flex:none;margin:3px 0 0;accent-color:#17171A;cursor:pointer" />
+              <img src="assets/icon-card.png" alt="" style="width:34px;height:34px;object-fit:contain;flex:none" />
+              <div style="flex:1;min-width:0">
+                <div style="font-size:14px;font-weight:700;color:#17171A;letter-spacing:-.4px;line-height:1.4;text-wrap:pretty">생활비통장에서 비상금 가져오기</div>
+                <div style="font-size:12px;font-weight:400;color:#A3A3AC;margin-top:5px;line-height:1.5;letter-spacing:-.3px;text-wrap:pretty">비상금 한도 내에서만 사용, 언제든 되돌릴 수 있어요.</div>
+              </div>
+              <div style="flex:none;font-size:13.5px;font-weight:800;color:#17171A;letter-spacing:-.3px;margin-top:2px">+500,000원</div>
+            </label>
+            <label style="display:flex;gap:11px;align-items:flex-start;padding:14px 2px;border-top:1px solid rgba(23,23,26,.07);position:relative;z-index:1;cursor:pointer">
+              <input type="checkbox" id="pick-2" onchange="app.togglePick(2)" style="width:20px;height:20px;flex:none;margin:3px 0 0;accent-color:#17171A;cursor:pointer" />
+              <img src="assets/icon-coffee.png" alt="" style="width:34px;height:34px;object-fit:contain;flex:none" />
+              <div style="flex:1;min-width:0">
+                <div style="font-size:14px;font-weight:700;color:#17171A;letter-spacing:-.4px;line-height:1.4;text-wrap:pretty">이번 주 카페 지출 한도 조정하기</div>
+                <div style="font-size:12px;font-weight:400;color:#A3A3AC;margin-top:5px;line-height:1.5;letter-spacing:-.3px;text-wrap:pretty">다음 주부터 자동으로 원래 한도로 복귀해요.</div>
+              </div>
+              <div style="flex:none;font-size:13.5px;font-weight:800;color:#17171A;letter-spacing:-.3px;margin-top:2px">+120,000원</div>
+            </label>
+            <label style="display:flex;gap:11px;align-items:flex-start;padding:14px 2px;border-top:1px solid rgba(23,23,26,.07);position:relative;z-index:1;cursor:pointer">
+              <input type="checkbox" id="pick-3" onchange="app.togglePick(3)" style="width:20px;height:20px;flex:none;margin:3px 0 0;accent-color:#17171A;cursor:pointer" />
+              <img src="assets/icon-laptop.png" alt="" style="width:34px;height:34px;object-fit:contain;flex:none" />
+              <div style="flex:1;min-width:0">
+                <div style="font-size:14px;font-weight:700;color:#17171A;letter-spacing:-.4px;line-height:1.4;text-wrap:pretty">사용하지 않는 구독 2건 일시 정지하기</div>
+                <div style="font-size:12px;font-weight:400;color:#A3A3AC;margin-top:5px;line-height:1.5;letter-spacing:-.3px;text-wrap:pretty">해지가 아니라 일시정지라 언제든 다시 켤 수 있어요.</div>
+              </div>
+              <div style="flex:none;font-size:13.5px;font-weight:800;color:#17171A;letter-spacing:-.3px;margin-top:2px">+70,000원</div>
+            </label>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:center;gap:5px;margin-top:16px;font-size:12px;font-weight:500;color:#A3A3AC">
+            <div style="opacity:.6"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#A3A3AC" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5"></path><path d="M12 8h.01"></path></svg></div>선택한 항목만 반영돼요
+          </div>
+          <div onclick="app.confirmAction()" style="margin-top:9px;background:#17171A;border-radius:16px;padding:16px;text-align:center;font-size:15.5px;font-weight:700;color:#fff;letter-spacing:-.3px;cursor:pointer">함께 조정하기</div>
+          <div style="margin-top:26px">
+            <div style="font-size:14px;font-weight:800;color:#17171A;letter-spacing:-.4px;padding:0 2px 9px">이런 것도 확인해보세요</div>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <div style="background:#FBFAF6;border:1px solid rgba(23,23,26,.07);border-radius:16px;padding:15px 17px;display:flex;align-items:center;gap:11px;cursor:pointer">
+                <div style="flex:none"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5C63C9" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20V10"></path><path d="M12 20V4"></path><path d="M19 20v-6"></path></svg></div>
+                <div style="flex:1;font-size:13.5px;font-weight:600;color:#3A3A40;letter-spacing:-.3px;text-wrap:pretty">이번 달 소비 목표를 다시 설정해볼까요?</div>
+                <div style="flex:none;opacity:.3"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#17171A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg></div>
+              </div>
+              <div style="background:#FBFAF6;border:1px solid rgba(23,23,26,.07);border-radius:16px;padding:15px 17px;display:flex;align-items:center;gap:11px;cursor:pointer">
+                <div style="flex:none"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2B7FD4" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="m17 2 4 4-4 4"></path><path d="M3 11v-1a4 4 0 0 1 4-4h14"></path><path d="m7 22-4-4 4-4"></path><path d="M21 13v1a4 4 0 0 1-4 4H3"></path></svg></div>
+                <div style="flex:1;font-size:13.5px;font-weight:600;color:#3A3A40;letter-spacing:-.3px;text-wrap:pretty">정기 결제 내역을 함께 점검해볼까요?</div>
+                <div style="flex:none;opacity:.3"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#17171A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="position:absolute;top:0;left:0;right:0;height:96px;z-index:30;background:#fff;display:flex;align-items:flex-end;padding:0 16px 12px">
+        <div onclick="app.jump('home')" style="width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none"><svg xmlns="http://www.w3.org/2000/svg" width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="#17171A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"></path><path d="M19 12H5"></path></svg></div>
+        <div style="flex:1;text-align:center;font-size:17px;font-weight:700;color:#17171A;letter-spacing:-.4px;margin-right:34px">내 결정이 필요해요</div>
+      </div>
+    </div>
+
+    <!-- DETAIL: 카카오뱅크가 이해한 나 -->
+    <div id="detail-principles" hidden style="position:absolute;inset:0;z-index:24;background:#fff;font-family:'Pretendard Variable',Pretendard,'Noto Sans KR',system-ui,sans-serif;animation:pa-rise 420ms cubic-bezier(.2,.8,.2,1) both">
+      <div style="position:absolute;inset:0;overflow-y:auto">
+        <div style="background:linear-gradient(165deg,#E4F2FB 0%,#EFF6F3 48%,#FCF8E2 78%,#FFFFFF 100%);padding:104px 18px 22px">
+          <div style="display:flex;gap:16px;align-items:flex-start">
+            <div style="width:78px;height:78px;border-radius:50%;flex:none;background:rgba(255,255,255,.62);display:flex;align-items:center;justify-content:center"><img src="assets/ai-mark.png" alt="" style="width:54px;height:54px;object-fit:contain" /></div>
+            <div style="flex:1;min-width:0;padding-top:4px">
+              <div style="font-size:22px;font-weight:800;color:#17171A;letter-spacing:-.7px;line-height:1.38;text-wrap:pretty">AI가 이해한 금융 원칙이<br />총 4개 있어요.</div>
+              <div style="font-size:13px;font-weight:500;color:#8E9498;margin-top:14px;line-height:1.55;letter-spacing:-.3px;text-wrap:pretty">대화와 금융 행동을 바탕으로 이해한 나의 금융 원칙이에요.</div>
+            </div>
+          </div>
+        </div>
+        <div style="padding:0 18px 40px;display:flex;flex-direction:column;gap:14px">
+          <div style="background:#fff;border-radius:26px;padding:20px;box-shadow:0 2px 14px rgba(23,23,26,.05)">
+            <div style="display:flex;gap:14px;align-items:flex-start">
+              <div style="width:66px;height:66px;border-radius:50%;flex:none;background:#FDECF3;display:flex;align-items:center;justify-content:center"><img src="assets/icon-pig.png" alt="" style="width:46px;height:46px;object-fit:contain" /></div>
+              <div style="flex:1;min-width:0;padding-top:2px">
+                <div style="font-size:12px;font-weight:500;color:#A3A3AC;letter-spacing:-.2px">9월에 확인됨</div>
+                <div id="principle-text-0" style="font-size:16.5px;font-weight:800;color:#17171A;letter-spacing:-.5px;line-height:1.4;margin-top:6px;text-wrap:pretty"></div>
+                <div style="font-size:12.5px;font-weight:400;color:#8A8A93;margin-top:7px;line-height:1.55;letter-spacing:-.3px;text-wrap:pretty">목표를 세우고 꾸준히 저축하는 패턴이 보여요.</div>
+              </div>
+            </div>
+            <div style="display:flex;gap:10px;margin-top:16px">
+              <div id="agree-btn-0" onclick="app.toggleAgree(0)" style="flex:1;text-align:center;border-radius:16px;padding:15px;font-size:14.5px;font-weight:700;color:#17171A;letter-spacing:-.3px;cursor:pointer;transition:background 180ms ease,box-shadow 180ms ease;background:#FDF6D2;box-shadow:none">맞아요</div>
+              <div onclick="app.openSheet(0)" style="flex:1;text-align:center;border-radius:16px;padding:15px;font-size:14.5px;font-weight:700;color:#17171A;letter-spacing:-.3px;cursor:pointer;background:#F2F2F4">조금 달라요</div>
+            </div>
+          </div>
+          <div style="background:#fff;border-radius:26px;padding:20px;box-shadow:0 2px 14px rgba(23,23,26,.05)">
+            <div style="display:flex;gap:14px;align-items:flex-start">
+              <div style="width:66px;height:66px;border-radius:50%;flex:none;background:#E8F2FE;display:flex;align-items:center;justify-content:center"><img src="assets/icon-plane.png" alt="" style="width:46px;height:46px;object-fit:contain" /></div>
+              <div style="flex:1;min-width:0;padding-top:2px">
+                <div style="font-size:12px;font-weight:500;color:#A3A3AC;letter-spacing:-.2px">9월에 확인됨</div>
+                <div id="principle-text-1" style="font-size:16.5px;font-weight:800;color:#17171A;letter-spacing:-.5px;line-height:1.4;margin-top:6px;text-wrap:pretty"></div>
+                <div style="font-size:12.5px;font-weight:400;color:#8A8A93;margin-top:7px;line-height:1.55;letter-spacing:-.3px;text-wrap:pretty">여행 관련 지출에서 만족도가 높게 나타나요.</div>
+              </div>
+            </div>
+            <div style="display:flex;gap:10px;margin-top:16px">
+              <div id="agree-btn-1" onclick="app.toggleAgree(1)" style="flex:1;text-align:center;border-radius:16px;padding:15px;font-size:14.5px;font-weight:700;color:#17171A;letter-spacing:-.3px;cursor:pointer;transition:background 180ms ease,box-shadow 180ms ease;background:#FDF6D2;box-shadow:none">맞아요</div>
+              <div onclick="app.openSheet(1)" style="flex:1;text-align:center;border-radius:16px;padding:15px;font-size:14.5px;font-weight:700;color:#17171A;letter-spacing:-.3px;cursor:pointer;background:#F2F2F4">조금 달라요</div>
+            </div>
+          </div>
+          <div style="background:#fff;border-radius:26px;padding:20px;box-shadow:0 2px 14px rgba(23,23,26,.05)">
+            <div style="display:flex;gap:14px;align-items:flex-start">
+              <div style="width:66px;height:66px;border-radius:50%;flex:none;background:#FDF4DC;display:flex;align-items:center;justify-content:center"><img src="assets/icon-card.png" alt="" style="width:46px;height:46px;object-fit:contain" /></div>
+              <div style="flex:1;min-width:0;padding-top:2px">
+                <div style="font-size:12px;font-weight:500;color:#A3A3AC;letter-spacing:-.2px">8월에 확인됨</div>
+                <div id="principle-text-2" style="font-size:16.5px;font-weight:800;color:#17171A;letter-spacing:-.5px;line-height:1.4;margin-top:6px;text-wrap:pretty"></div>
+                <div style="font-size:12.5px;font-weight:400;color:#8A8A93;margin-top:7px;line-height:1.55;letter-spacing:-.3px;text-wrap:pretty">구독, 멤버십 등 정기 결제를 꼼꼼히 비교해요.</div>
+              </div>
+            </div>
+            <div style="display:flex;gap:10px;margin-top:16px">
+              <div id="agree-btn-2" onclick="app.toggleAgree(2)" style="flex:1;text-align:center;border-radius:16px;padding:15px;font-size:14.5px;font-weight:700;color:#17171A;letter-spacing:-.3px;cursor:pointer;transition:background 180ms ease,box-shadow 180ms ease;background:#FDF6D2;box-shadow:none">맞아요</div>
+              <div onclick="app.openSheet(2)" style="flex:1;text-align:center;border-radius:16px;padding:15px;font-size:14.5px;font-weight:700;color:#17171A;letter-spacing:-.3px;cursor:pointer;background:#F2F2F4">조금 달라요</div>
+            </div>
+          </div>
+          <div style="background:#fff;border-radius:26px;padding:20px;box-shadow:0 2px 14px rgba(23,23,26,.05)">
+            <div style="display:flex;gap:14px;align-items:flex-start">
+              <div style="width:66px;height:66px;border-radius:50%;flex:none;background:#E8F2FE;display:flex;align-items:center;justify-content:center"><img src="assets/icon-calendar.png" alt="" style="width:46px;height:46px;object-fit:contain" /></div>
+              <div style="flex:1;min-width:0;padding-top:2px">
+                <div style="font-size:12px;font-weight:500;color:#A3A3AC;letter-spacing:-.2px">8월에 확인됨</div>
+                <div id="principle-text-3" style="font-size:16.5px;font-weight:800;color:#17171A;letter-spacing:-.5px;line-height:1.4;margin-top:6px;text-wrap:pretty"></div>
+                <div style="font-size:12.5px;font-weight:400;color:#8A8A93;margin-top:7px;line-height:1.55;letter-spacing:-.3px;text-wrap:pretty">불필요한 구독은 스스로 해지하는 경향이 있어요.</div>
+              </div>
+            </div>
+            <div style="display:flex;gap:10px;margin-top:16px">
+              <div id="agree-btn-3" onclick="app.toggleAgree(3)" style="flex:1;text-align:center;border-radius:16px;padding:15px;font-size:14.5px;font-weight:700;color:#17171A;letter-spacing:-.3px;cursor:pointer;transition:background 180ms ease,box-shadow 180ms ease;background:#FDF6D2;box-shadow:none">맞아요</div>
+              <div onclick="app.openSheet(3)" style="flex:1;text-align:center;border-radius:16px;padding:15px;font-size:14.5px;font-weight:700;color:#17171A;letter-spacing:-.3px;cursor:pointer;background:#F2F2F4">조금 달라요</div>
+            </div>
+          </div>
+          <div style="background:#FEF8DC;border-radius:24px;padding:18px 20px;display:flex;gap:14px;align-items:center;margin-top:4px">
+            <img src="assets/kakao-today.png" alt="kakao today" style="width:150px;height:auto;object-fit:contain;flex:none" />
+            <div style="flex:1;min-width:0;text-align:right">
+              <div style="font-size:14.5px;font-weight:700;color:#17171A;letter-spacing:-.4px;line-height:1.5;text-wrap:pretty">원칙은 대화를 나눌수록<br />점점 더 정확해져요.</div>
+              <div style="font-size:12px;font-weight:500;color:#B0AC93;margin-top:7px;letter-spacing:-.3px">더 많이 이야기해 주세요!</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="position:absolute;top:0;left:0;right:0;height:96px;z-index:30;background:linear-gradient(180deg,#E4F2FB 0%,#E7F2F9 100%);display:flex;align-items:flex-end;padding:0 16px 12px">
+        <div onclick="app.jump('home')" style="width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none"><svg xmlns="http://www.w3.org/2000/svg" width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="#17171A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"></path><path d="M19 12H5"></path></svg></div>
+        <div style="flex:1;text-align:center;font-size:17px;font-weight:700;color:#17171A;letter-spacing:-.4px;margin-right:34px">카카오뱅크가 이해한 나</div>
+      </div>
+
+      <!-- bottom sheet -->
+      <div id="sheet-backdrop" onclick="app.closeSheet()" style="position:absolute;inset:0;z-index:40;background:rgba(23,23,26,.45);transition:opacity 280ms ease;opacity:0;pointer-events:none"></div>
+      <div id="sheet-panel" style="position:absolute;left:0;right:0;bottom:0;z-index:41;background:#fff;border-radius:26px 26px 0 0;padding:14px 20px calc(22px + env(safe-area-inset-bottom, 0px));transition:transform 420ms cubic-bezier(.16,.84,.24,1);transform:translateY(105%);pointer-events:none">
+        <div style="position:relative;display:flex;justify-content:center;padding-bottom:4px">
+          <div style="width:44px;height:4px;border-radius:3px;background:#E3E3E7"></div>
+          <div onclick="app.closeSheet()" style="position:absolute;top:-4px;right:-2px;width:30px;height:30px;border-radius:50%;background:#F4F4F6;display:flex;align-items:center;justify-content:center;cursor:pointer"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#4A4A52" stroke-width="2.4" stroke-linecap="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg></div>
+        </div>
+
+        <div id="sheet-editing" hidden>
+          <div style="font-size:20px;font-weight:800;color:#17171A;letter-spacing:-.6px;margin-top:10px">어떤 부분이 다른가요?</div>
+          <div style="font-size:12.5px;font-weight:500;color:#9A9AA4;margin-top:8px;line-height:1.6;letter-spacing:-.3px">제가 이해한 내용과 다른 부분을 알려주시면<br />금융 원칙을 다시 정리할게요.</div>
+
+          <div style="margin-top:16px;background:#EDF5FD;border-radius:18px;padding:15px 16px;display:flex;gap:12px;align-items:flex-start">
+            <img id="sheet-icon" src="assets/icon-pig.png" alt="" style="width:36px;height:36px;object-fit:contain;flex:none;margin-top:2px" />
+            <div style="flex:1;min-width:0">
+              <div style="font-size:11px;font-weight:600;color:#7FA8CC;letter-spacing:-.2px">AI가 이해한 내용</div>
+              <div id="sheet-current" style="font-size:14.5px;font-weight:800;color:#17171A;margin-top:5px;line-height:1.4;letter-spacing:-.45px;text-wrap:pretty"></div>
+              <div id="sheet-desc" style="font-size:11.5px;font-weight:500;color:#93A3B2;margin-top:6px;letter-spacing:-.3px"></div>
+            </div>
+          </div>
+
+          <div style="font-size:14.5px;font-weight:800;color:#17171A;letter-spacing:-.45px;margin-top:18px">조금 더 알려주세요</div>
+          <div style="font-size:11.5px;font-weight:500;color:#A3A3AC;margin-top:5px;letter-spacing:-.3px">아래에서 비슷한 내용을 선택하거나, 직접 입력해 주세요.</div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:11px">
+            <div onclick="app.toggleChip(0)" style="cursor:pointer;display:flex">
+              <div id="chip-0" style="padding:10px 15px;border-radius:999px;font-size:13px;font-weight:600;letter-spacing:-.3px;color:#17171A;transition:background 160ms ease,border-color 160ms ease;border:1px solid rgba(23,23,26,.12);background:#FAFAFB">여행도 예산 안에서</div>
+            </div>
+            <div onclick="app.toggleChip(1)" style="cursor:pointer;display:flex">
+              <div id="chip-1" style="padding:10px 15px;border-radius:999px;font-size:13px;font-weight:600;letter-spacing:-.3px;color:#17171A;transition:background 160ms ease,border-color 160ms ease;border:1px solid rgba(23,23,26,.12);background:#FAFAFB">저축에 영향 없다면 OK</div>
+            </div>
+            <div onclick="app.toggleChip(2)" style="cursor:pointer;display:flex">
+              <div id="chip-2" style="padding:10px 15px;border-radius:999px;font-size:13px;font-weight:600;letter-spacing:-.3px;color:#17171A;transition:background 160ms ease,border-color 160ms ease;border:1px solid rgba(23,23,26,.12);background:#FAFAFB">여행 종류에 따라 달라요</div>
+            </div>
+            <div onclick="app.toggleChip(3)" style="cursor:pointer;display:flex">
+              <div id="chip-3" style="padding:10px 15px;border-radius:999px;font-size:13px;font-weight:600;letter-spacing:-.3px;color:#17171A;transition:background 160ms ease,border-color 160ms ease;border:1px solid rgba(23,23,26,.12);background:#FAFAFB">✎ 직접 알려줄게요</div>
+            </div>
+          </div>
+
+          <div style="font-size:12.5px;font-weight:700;color:#5C5C66;letter-spacing:-.3px;margin-top:18px">직접 입력 (선택)</div>
+          <div style="margin-top:8px;border:1px solid rgba(23,23,26,.10);border-radius:14px;padding:13px 14px 9px">
+            <textarea id="sheet-textarea" oninput="app.onSheetInput(event)" maxlength="200" placeholder="예: 여행에서는 조금 더 써도 되지만, 적금을 깨면서까지 쓰고 싶지는 않아." style="width:100%;height:46px;resize:none;border:none;outline:none;background:transparent;padding:0;font-family:'Pretendard Variable',Pretendard,'Noto Sans KR',system-ui,sans-serif;font-size:12.5px;font-weight:500;color:#17171A;letter-spacing:-.3px;line-height:1.6;box-sizing:border-box"></textarea>
+            <div style="text-align:right;font-size:11px;font-weight:500;color:#B7B7BE"><span id="sheet-count">0</span>/200</div>
+          </div>
+
+          <div onclick="app.submitSheet()" style="margin-top:16px;background:#FFE97A;border-radius:16px;padding:16px;text-align:center;font-size:15.5px;font-weight:800;color:#17171A;letter-spacing:-.4px;cursor:pointer">내 기준 알려주기　→</div>
+        </div>
+
+        <div id="sheet-confirming" hidden>
+          <div style="display:flex;align-items:center;gap:8px;margin-top:12px">
+            <img src="assets/ai-mark.png" alt="" style="width:22px;height:22px;object-fit:contain" />
+            <div style="font-size:20px;font-weight:800;color:#17171A;letter-spacing:-.6px">이렇게 이해했어요</div>
+          </div>
+          <div style="margin-top:16px;background:#EDF5FD;border-radius:18px;padding:18px 16px;display:flex;gap:12px;align-items:flex-start">
+            <img id="sheet-icon-confirm" src="assets/icon-pig.png" alt="" style="width:36px;height:36px;object-fit:contain;flex:none;margin-top:1px" />
+            <div id="sheet-proposal" style="flex:1;min-width:0;font-size:15px;font-weight:800;color:#17171A;line-height:1.5;letter-spacing:-.45px;text-wrap:pretty"></div>
+          </div>
+          <div style="display:flex;gap:10px;margin-top:20px">
+            <div onclick="app.backToEdit()" style="flex:1;text-align:center;background:#F2F2F4;border-radius:16px;padding:16px;font-size:14.5px;font-weight:700;color:#17171A;letter-spacing:-.4px;cursor:pointer">조금 더 수정할게요</div>
+            <div onclick="app.saveSheet()" style="flex:1;text-align:center;background:#FFE97A;border-radius:16px;padding:16px;font-size:14.5px;font-weight:800;color:#17171A;letter-spacing:-.4px;cursor:pointer">맞아요, 기억해줘</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="home-handle" style="position:absolute;left:50%;transform:translateX(-50%);bottom:calc(9px + env(safe-area-inset-bottom, 0px));width:128px;height:5px;border-radius:3px;z-index:50;transition:background 700ms ease;background:rgba(251,250,246,.26)"></div>
+  </div>
+
+  <!-- state rail (desktop preview aid; hidden on mobile) -->
+  <div class="state-rail">
+    <div class="rail-title">Personal Agent flow</div>
+    <div class="rail-step" onclick="app.jump('idle')"><div class="rail-dot" id="dot-idle"></div><div class="rail-label">1 · Idle — 대기</div></div>
+    <div class="rail-step" onclick="app.jump('listening')"><div class="rail-dot" id="dot-listening"></div><div class="rail-label">2 · Listening — 음성 입력</div></div>
+    <div class="rail-step" onclick="app.jump('processing')"><div class="rail-dot" id="dot-processing"></div><div class="rail-label">3 · Processing — 확인 중</div></div>
+    <div class="rail-step" onclick="app.jump('result')"><div class="rail-dot" id="dot-result"></div><div class="rail-label">4 · Result — 결과 카드</div></div>
+    <div class="rail-step" onclick="app.jump('home')"><div class="rail-dot" id="dot-home"></div><div class="rail-label">5 · Home — 내가 결정할 것</div></div>
+    <div class="rail-step" onclick="app.jump('detail:action')"><div class="rail-dot" id="dot-detail:action"></div><div class="rail-label">6 · 내 결정이 필요해요</div></div>
+    <div class="rail-step" onclick="app.jump('detail:decisions')"><div class="rail-dot" id="dot-detail:decisions"></div><div class="rail-label">7 · 함께한 결정</div></div>
+    <div class="rail-step" onclick="app.jump('detail:plans')"><div class="rail-dot" id="dot-detail:plans"></div><div class="rail-label">8 · 앞으로 함께할 계획</div></div>
+    <div class="rail-step" onclick="app.jump('detail:principles')"><div class="rail-dot" id="dot-detail:principles"></div><div class="rail-label">9 · 카카오뱅크가 이해한 나</div></div>
+    <div class="rail-step" onclick="app.jump('flow')"><div class="rail-dot" id="dot-flow"></div><div class="rail-label">↻ 전체 자동 재생</div></div>
+    <div class="rail-note">자동 재생됩니다. 항목을 눌러 특정 상태로 바로 이동할 수 있어요.</div>
+  </div>
+
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var ACCENT = '#FFE300';
+
+  var state = {
+    phase: 'idle',
+    lines: 0,
+    highlight: false,
+    picks: [false, false, false, false],
+    agreed: [false, false, false, false],
+    principles: [
+      '장기저축은 가능한 유지해요.',
+      '여행에서는 경험에 조금 더 써도 괜찮아요.',
+      '새로운 고정비는 신중하게 결정해요.',
+      '소액 반복결제는 제가 알아서 관리할게요.'
+    ],
+    sheet: -1,
+    draft: '',
+    chips: [false, false, false, false],
+    sheetStage: 'edit'
+  };
+
+  var timers = [];
+  function clearTimers() { timers.forEach(clearTimeout); timers = []; }
+  function at(ms, fn) { timers.push(setTimeout(fn, ms)); }
+  function setState(patch) { Object.assign(state, patch); render(); }
+
+  var SHEET_DESC = [
+    '목표를 세우고 꾸준히 저축하는 패턴이 보여요.',
+    '여행 관련 지출에서 만족도가 높게 나타나요.',
+    '구독, 멤버십 등 정기 결제를 꼼꼼히 비교해요.',
+    '불필요한 구독은 스스로 해지하는 경향이 있어요.'
+  ];
+  var SHEET_ICON = ['assets/icon-pig.png', 'assets/icon-plane.png', 'assets/icon-card.png', 'assets/icon-calendar.png'];
+  var SUB_CHUNKS = ['엄마랑 10월에', '오사카 3박 4일', '다녀올까 해'];
+
+  function run() {
+    clearTimers();
+    setState({ phase: 'idle', lines: 0, highlight: false });
+    at(1300, function () { setState({ phase: 'listening', lines: 1 }); });
+    at(2150, function () { setState({ lines: 2 }); });
+    at(3000, function () { setState({ lines: 3 }); });
+    at(4100, function () { setState({ phase: 'processing' }); });
+    at(5150, function () { setState({ phase: 'result' }); });
+  }
+
+  function goHome() {
+    clearTimers();
+    setState({ phase: 'home', highlight: false });
+    timers.push(setTimeout(function () {
+      var sc = document.getElementById('home-scroll');
+      var sec = document.getElementById('section-action');
+      if (sc && sec) sc.scrollTo({ top: sec.offsetTop - 84, behavior: 'smooth' });
+      setState({ highlight: true });
+    }, 420));
+    timers.push(setTimeout(function () { setState({ highlight: false }); }, 2300));
+  }
+
+  function toggleAgree(i) { state.agreed[i] = !state.agreed[i]; render(); }
+
+  function openSheet(i) {
+    state.sheet = i;
+    state.draft = '';
+    state.chips = [false, false, false, false];
+    state.sheetStage = 'edit';
+    render();
+  }
+
+  function toggleChip(i) { state.chips[i] = !state.chips[i]; render(); }
+
+  function proposal() {
+    var t = (state.draft || '').trim();
+    if (t) return t;
+    var c = state.chips;
+    if (c[1]) return '여행에서는 경험을 우선하되, 장기저축에 영향을 주지 않는 범위에서 지출해요.';
+    if (c[0]) return '여행에서도 정해둔 예산 안에서 쓰는 걸 우선해요.';
+    if (c[2]) return '여행 종류에 따라 지출 기준을 다르게 적용해요.';
+    return '여행에서는 경험을 우선하되, 장기저축에 영향을 주지 않는 범위에서 지출해요.';
+  }
+
+  function submitSheet() { state.sheetStage = 'confirm'; render(); }
+  function backToEdit() { state.sheetStage = 'edit'; render(); }
+
+  function saveSheet() {
+    var next = proposal();
+    if (state.sheet < 0) { state.sheet = -1; render(); return; }
+    state.principles[state.sheet] = next;
+    state.sheet = -1;
+    state.draft = '';
+    state.sheetStage = 'edit';
+    state.chips = [false, false, false, false];
+    render();
+  }
+
+  function closeSheet() {
+    state.sheet = -1;
+    state.draft = '';
+    state.sheetStage = 'edit';
+    state.chips = [false, false, false, false];
+    render();
+  }
+
+  function onSheetInput(e) { state.draft = e.target.value; render(); }
+
+  function togglePick(i) { state.picks[i] = !state.picks[i]; render(); }
+
+  function confirmAction() { goHome(); }
+
+  function openDetail(kind) { clearTimers(); setState({ phase: 'detail:' + kind, highlight: false }); }
+
+  function jump(phase) {
+    if (phase === 'home') return goHome();
+    clearTimers();
+    if (phase === 'flow') return run();
+    if (phase.indexOf('detail:') === 0) return openDetail(phase.slice(7));
+    setState({ phase: phase, lines: phase === 'listening' ? 3 : 0, highlight: false });
+  }
+
+  function show(id, on) {
+    var el = document.getElementById(id);
+    if (el) el.hidden = !on;
+  }
+
+  function render() {
+    var phase = state.phase, lines = state.lines, highlight = state.highlight;
+    var isResult = phase === 'result';
+    var isHome = phase === 'home';
+    var isDetail = phase.indexOf('detail:') === 0;
+    var light = isResult || isHome || isDetail;
+    var isIdle = phase === 'idle';
+    var isListening = phase === 'listening';
+    var isProcessing = phase === 'processing';
+
+    show('voice-screen', !isHome && !isDetail);
+    show('home-wrap', isHome || isDetail);
+    document.getElementById('bottom-nav').style.display = isHome ? 'flex' : 'none';
+
+    show('detail-decisions', phase === 'detail:decisions');
+    show('detail-plans', phase === 'detail:plans');
+    show('detail-action', phase === 'detail:action');
+    show('detail-principles', phase === 'detail:principles');
+
+    document.getElementById('cream-overlay').style.opacity = light ? '1' : '0';
+    document.getElementById('status-bar').style.color = light ? '#17171A' : 'rgba(251,250,246,.9)';
+    document.getElementById('home-handle').style.background = light ? 'rgba(23,23,26,.22)' : 'rgba(251,250,246,.26)';
+
+    var micWrap = document.getElementById('mic-wrap');
+    micWrap.style.transform = isProcessing ? 'translateY(-218px) scale(.42)'
+      : isResult ? 'translateY(-232px) scale(.34)' : 'translateY(0) scale(1)';
+    micWrap.style.opacity = isResult ? '0.35' : '1';
+
+    var micCircle = document.getElementById('mic-circle');
+    micCircle.style.background = isResult ? 'rgba(23,23,26,.08)' : isListening ? 'rgba(255,227,0,.14)' : 'rgba(251,250,246,.07)';
+    micCircle.style.boxShadow = isListening ? '0 0 40px rgba(255,227,0,.28)' : 'none';
+    micCircle.style.animation = isListening ? 'pa-breathe 1.6s ease-in-out infinite' : 'none';
+
+    var micInk = isResult ? 'rgba(23,23,26,.45)' : isIdle ? 'rgba(251,250,246,.45)' : ACCENT;
+    document.getElementById('mic-ink-a').style.background = micInk;
+    document.getElementById('mic-ink-b').style.borderColor = micInk;
+    document.getElementById('mic-ink-c').style.background = micInk;
+
+    show('mic-rings', isListening);
+    show('idle-hint', isIdle);
+    show('subtitles-block', isListening);
+    show('processing-block', isProcessing);
+
+    var shown = SUB_CHUNKS.slice(0, lines);
+    for (var s = 0; s < 3; s++) {
+      var lineEl = document.getElementById('sub-line-' + s);
+      if (s < shown.length) {
+        lineEl.hidden = false;
+        lineEl.style.opacity = (s === shown.length - 1) ? '1' : String(0.34 + s * 0.06);
+      } else {
+        lineEl.hidden = true;
+      }
+    }
+
+    document.getElementById('result-backdrop').style.opacity = isResult ? '1' : '0';
+    var cardWrap = document.getElementById('result-card-wrap');
+    cardWrap.style.transform = isResult ? 'translateY(0)' : 'translateY(115%)';
+    cardWrap.style.opacity = isResult ? '1' : '0';
+
+    var sectionAction = document.getElementById('section-action');
+    sectionAction.style.transform = highlight ? 'scale(1.025)' : 'scale(1)';
+    sectionAction.style.boxShadow = highlight ? ('0 0 0 2.5px ' + ACCENT + ', 0 14px 34px rgba(23,23,26,.10)') : '0 0 0 0 rgba(255,227,0,0)';
+
+    for (var p = 0; p < 4; p++) {
+      document.getElementById('principle-text-' + p).textContent = state.principles[p];
+      var agreeBtn = document.getElementById('agree-btn-' + p);
+      agreeBtn.style.background = state.agreed[p] ? '#FFE97A' : '#FDF6D2';
+      agreeBtn.style.boxShadow = state.agreed[p] ? 'inset 0 0 0 2px #E8C21E' : 'none';
+    }
+
+    var sheetOpen = state.sheet >= 0;
+    var sheetIdx = Math.max(0, state.sheet);
+    document.getElementById('sheet-backdrop').style.opacity = sheetOpen ? '1' : '0';
+    document.getElementById('sheet-backdrop').style.pointerEvents = sheetOpen ? 'auto' : 'none';
+    var sheetPanel = document.getElementById('sheet-panel');
+    sheetPanel.style.transform = sheetOpen ? 'translateY(0)' : 'translateY(105%)';
+    sheetPanel.style.pointerEvents = sheetOpen ? 'auto' : 'none';
+
+    document.getElementById('sheet-current').textContent = sheetOpen ? state.principles[state.sheet] : '';
+    document.getElementById('sheet-desc').textContent = SHEET_DESC[sheetIdx];
+    document.getElementById('sheet-icon').src = SHEET_ICON[sheetIdx];
+    document.getElementById('sheet-icon-confirm').src = SHEET_ICON[sheetIdx];
+
+    var textarea = document.getElementById('sheet-textarea');
+    if (textarea.value !== state.draft) textarea.value = state.draft;
+    document.getElementById('sheet-count').textContent = String((state.draft || '').length);
+
+    show('sheet-editing', state.sheetStage === 'edit');
+    show('sheet-confirming', state.sheetStage === 'confirm');
+    document.getElementById('sheet-proposal').textContent = proposal();
+
+    for (var c = 0; c < 4; c++) {
+      var chip = document.getElementById('chip-' + c);
+      chip.style.background = state.chips[c] ? '#FFF6CF' : '#FAFAFB';
+      chip.style.borderColor = state.chips[c] ? '#F2D65C' : 'rgba(23,23,26,.12)';
+    }
+
+    for (var k = 0; k < 4; k++) {
+      var cb = document.getElementById('pick-' + k);
+      if (cb) cb.checked = !!state.picks[k];
+    }
+
+    var railKeys = ['idle', 'listening', 'processing', 'result', 'home', 'detail:action', 'detail:decisions', 'detail:plans', 'detail:principles', 'flow'];
+    railKeys.forEach(function (k) {
+      var dot = document.getElementById('dot-' + k);
+      if (!dot) return;
+      dot.style.background = (k === phase) ? ACCENT : 'rgba(23,23,26,.16)';
+      dot.parentElement.style.boxShadow = (k === phase) ? '0 0 0 1.5px #17171A' : 'none';
+    });
+  }
+
+  window.app = {
+    run: run,
+    goHome: goHome,
+    toggleAgree: toggleAgree,
+    openSheet: openSheet,
+    toggleChip: toggleChip,
+    submitSheet: submitSheet,
+    backToEdit: backToEdit,
+    saveSheet: saveSheet,
+    closeSheet: closeSheet,
+    onSheetInput: onSheetInput,
+    togglePick: togglePick,
+    confirmAction: confirmAction,
+    openDetail: openDetail,
+    jump: jump
+  };
+
+  render();
+  run();
+})();
+</script>
+
+</body>
+</html>
