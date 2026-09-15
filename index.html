@@ -124,11 +124,10 @@
           </div>
 
           <div id="mic-circle" style="position:relative;width:96px;height:96px;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:background 600ms ease,box-shadow 600ms ease;background:rgba(251,250,246,.07);box-shadow:none;animation:none">
-            <div style="display:flex;flex-direction:column;align-items:center;gap:5px">
-              <div id="mic-ink-a" style="width:17px;height:30px;border-radius:9px;transition:background 600ms ease;background:rgba(251,250,246,.45)"></div>
-              <div id="mic-ink-b" style="width:30px;height:15px;border-radius:0 0 16px 16px;border:2.5px solid;border-top:none;box-sizing:border-box;transition:border-color 600ms ease;border-color:rgba(251,250,246,.45)"></div>
-              <div id="mic-ink-c" style="width:2.5px;height:6px;border-radius:2px;transition:background 600ms ease;background:rgba(251,250,246,.45)"></div>
-            </div>
+            <svg id="mic-icon" width="38" height="38" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="rgba(251,250,246,.45)" style="transition:fill 600ms ease">
+              <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
+              <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+            </svg>
           </div>
         </div>
       </div>
@@ -1026,9 +1025,7 @@
     micCircle.style.animation = isListening ? 'pa-breathe 1.6s ease-in-out infinite' : 'none';
 
     var micInk = isResult ? 'rgba(23,23,26,.45)' : isIdle ? 'rgba(251,250,246,.45)' : ACCENT;
-    document.getElementById('mic-ink-a').style.background = micInk;
-    document.getElementById('mic-ink-b').style.borderColor = micInk;
-    document.getElementById('mic-ink-c').style.background = micInk;
+    document.getElementById('mic-icon').style.fill = micInk;
 
     show('mic-rings', isListening);
     show('idle-hint', isIdle);
